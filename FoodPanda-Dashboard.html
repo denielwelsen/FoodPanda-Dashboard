@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foodpanda Analytics - Executive Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 1. VARIABEL WARNA & RESET */
+        :root {
+            --foodpanda-magenta: #D70F64;
+            --soft-pink: #fff5f8;
+            --border-color: #eee;
+            --bg-gray: #f0f2f5;
+            --text-dark: #1e293b;
+            --text-muted: #64748b;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body { 
+            background-color: var(--bg-gray); 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+            overflow: hidden;
+            font-family: 'Lato', sans-serif;
+        }
+
+        /* 2. NAVBAR */
+        .navbar { 
+            background-color: var(--foodpanda-magenta); 
+            color: white; 
+            padding: 15px 30px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); 
+            z-index: 100;
+            font-family: 'Poppins', sans-serif;
+        }
+        .navbar h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
+        .navbar span { font-size: 0.85rem; background: rgba(255,255,255,0.15); padding: 6px 15px; border-radius: 20px; }
+
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+
+        /* 3. SIDEBAR (KIRI) */
+        .sidebar { 
+            width: 280px; 
+            background: white; 
+            border-right: 1px solid var(--border-color); 
+            padding: 25px 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+            overflow-y: auto; 
+        }
+        .sidebar-title { font-family: 'Poppins', sans-serif; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; font-weight: 700; }
+        
+        .kpi-card { background: var(--soft-pink); border-radius: 12px; padding: 15px; border-left: 5px solid var(--foodpanda-magenta); transition: transform 0.2s; }
+        .kpi-card:hover { transform: scale(1.02); }
+        .kpi-title { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; }
+        .kpi-value { font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 700; color: var(--foodpanda-magenta); }
+        .kpi-trend { font-size: 0.75rem; margin-top: 8px; display: flex; align-items: center; gap: 5px; color: #10b981; font-weight: bold; }
+
+        /* 4. AREA TENGAH (TABS, INSIGHTS, SIMULATOR & FOOTER) */
+        .center-section { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            background: var(--bg-gray); 
+            overflow-y: auto; 
+        }
+        
+        .center-content { padding: 30px 40px; flex-grow: 1; }
+        
+        /* Navigasi Tab */
+        .tabs-nav { display: flex; gap: 15px; margin-bottom: 25px; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+        .tab-btn { font-family: 'Poppins', sans-serif; font-size: 1.1rem; color: var(--text-muted); font-weight: 600; cursor: pointer; padding: 10px 15px; border-radius: 8px 8px 0 0; transition: all 0.3s; position: relative; }
+        .tab-btn:hover { color: var(--foodpanda-magenta); }
+        .tab-btn.active { color: var(--foodpanda-magenta); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -12px; left: 0; width: 100%; height: 3px; background: var(--foodpanda-magenta); border-radius: 3px 3px 0 0; }
+
+        .tab-content { display: none; animation: fadeIn 0.4s ease; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Accordion Dropdown (Laporan) */
+        .accordion-item { background: white; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border-color); overflow: hidden; }
+        .accordion-header { padding: 20px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: var(--text-dark); transition: background 0.3s; }
+        .accordion-header:hover { background: var(--soft-pink); }
+        .accordion-header.active { background: var(--foodpanda-magenta); color: white; }
+        .accordion-content-box { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, padding 0.4s ease; background: #fafafa; }
+        .accordion-content-box.show { max-height: 500px; padding: 20px; border-top: 1px solid var(--border-color); }
+        
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 700; color: white; margin-bottom: 10px; display: inline-block; text-transform: uppercase; }
+        .badge-desc { background: #0ea5e9; } .badge-diag { background: #f59e0b; } .badge-pred { background: #8b5cf6; } .badge-pres { background: #10b981; }
+
+        /* UI SIMULATOR PREDIKTIF */
+        .simulator-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--border-color); }
+        .sim-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .sim-input-group { display: flex; flex-direction: column; gap: 8px; }
+        .sim-input-group label { font-size: 0.85rem; font-weight: 700; color: var(--text-muted); }
+        .sim-input-group select, .sim-input-group input { padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 1rem; outline: none; }
+        .sim-input-group input:focus, .sim-input-group select:focus { border-color: var(--foodpanda-magenta); }
+        
+        .sim-btn { background: var(--foodpanda-magenta); color: white; border: none; padding: 15px; font-size: 1rem; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.3s; width: 100%; margin-bottom: 20px; font-family: 'Poppins'; }
+        .sim-btn:hover { background: #b00c50; }
+
+        .result-box { display: none; padding: 20px; border-radius: 8px; text-align: left; border: 2px dashed #ccc; }
+        .result-box.profit { border-color: #10b981; background: #ecfdf5; }
+        .result-box.loss { border-color: #ef4444; background: #fef2f2; }
+        .result-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; text-align: center; }
+        .result-details { font-size: 0.9rem; color: #555; line-height: 1.6; }
+        .result-highlight { font-size: 1.5rem; font-weight: 800; margin: 10px 0; text-align: center; }
+
+
+        /* FOOTER GRAFIS FOODPANDA */
+        .center-footer { 
+            padding: 30px 40px; 
+            background: linear-gradient(to bottom, transparent, #ffffff); 
+            display: flex; 
+            justify-content: center;
+            align-items: center; 
+            margin-top: 10px; 
+            border-top: 1px solid rgba(0,0,0,0.05);
+        }
+        .footer-branding { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center;
+            text-align: center; 
+            gap: 8px; 
+        }
+        
+        .footer-branding img { 
+            height: 55px;
+            width: auto; 
+            max-width: 200px;
+            object-fit: contain;
+            mix-blend-mode: multiply;
+        }
+        
+        .footer-branding p { font-size: 0.85rem; color: var(--text-muted); font-style: italic; }
+        
+        /* 5. AI SECTION (KANAN) */
+        .ai-section { width: 360px; background: white; border-left: 1px solid var(--border-color); display: flex; flex-direction: column; }
+        .chat-header { padding: 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background: var(--soft-pink); }
+        .chat-header span { font-weight: 700; color: var(--foodpanda-magenta); font-family: 'Poppins', sans-serif; }
+        
+        .chat-history { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .message { padding: 12px 18px; border-radius: 18px; font-size: 0.9rem; line-height: 1.5; max-width: 90%; }
+        .msg-ai { background: #f1f5f9; color: var(--text-dark); border-bottom-left-radius: 2px; }
+        .msg-user { background: var(--foodpanda-magenta); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+
+        .quick-prompts { padding: 15px 20px; display: flex; flex-wrap: wrap; gap: 8px; background: #fafafa; border-top: 1px solid var(--border-color); }
+        .prompt-btn { background: white; border: 1px solid var(--foodpanda-magenta); color: var(--foodpanda-magenta); padding: 8px 12px; border-radius: 15px; font-size: 0.75rem; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .prompt-btn:hover { background: var(--foodpanda-magenta); color: white; }
+
+        .input-area { padding: 20px; border-top: 1px solid var(--border-color); display: flex; gap: 10px; background: white; }
+        input { flex: 1; padding: 12px 20px; border: 1px solid var(--border-color); border-radius: 25px; outline: none; background: #f8fafc; }
+        .send-btn { background: var(--foodpanda-magenta); color: white; border: none; padding: 0 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <h1>🐼 FOODPANDA EXECUTIVE HUB</h1>
+        <span>Analytics Dashboard - Kelompok 5</span>
+    </nav>
+
+    <div class="main-container">
+        
+        <aside class="sidebar">
+            <div class="sidebar-title">Macro Metrics</div>
+            <div class="kpi-card">
+                <div class="kpi-title">Total Revenue</div>
+                <div class="kpi-value">$14.34 M</div>
+                <div class="kpi-trend">▲ +12.4% MoM</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-title">Total Order</div>
+                <div class="kpi-value">6,000</div>
+                <div class="kpi-trend">▲ Transaksi Valid</div>
+            </div>
+
+            <div class="sidebar-title" style="margin-top:10px;">Market Insights</div>
+            <div class="kpi-card" style="border-left-color: #8b5cf6;">
+                <div class="kpi-title">Top Performance City</div>
+                <div class="kpi-value" style="color: #8b5cf6;">Lahore</div>
+            </div>
+            <div class="kpi-card" style="border-left-color: #f59e0b;">
+                <div class="kpi-title">At-Risk Segment</div>
+                <div class="kpi-value" style="color: #f59e0b;">Senior</div>
+            </div>
+        </aside>
+
+        <main class="center-section">
+            <div class="center-content">
+                
+                <div class="tabs-nav">
+                    <div class="tab-btn active" onclick="switchTab('reports')">💡 Analytic Reports</div>
+                    <div class="tab-btn" onclick="switchTab('simulator')">📈 AI Price Simulator</div>
+                </div>
+                
+                <div id="reports" class="tab-content active">
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            1. Dominasi Kategori Makanan pada Dashboard Utama ▼
+                        </div>
+                        <div class="accordion-content-box">
+                            <span class="badge badge-desc">Descriptive Analysis</span>
+                            <p>Kategori <b>'Continental'</b> secara visual mendominasi performa transaksi di platform. Hal ini menunjukkan preferensi pasar yang kuat terhadap variasi menu internasional.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            2. Identifikasi Akar Masalah Churn Rate ▼
+                        </div>
+                        <div class="accordion-content-box">
+                            <span class="badge badge-diag">Diagnostic Analysis</span>
+                            <p>Ditemukan angka ketidakaktifan (Inactive) tertinggi pada demografi <b>Senior (51.4%)</b>. Diagnosa menunjukkan kurangnya adaptasi fitur untuk pengguna lansia.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            3. Proyeksi Wilayah Pertumbuhan Strategis ▼
+                        </div>
+                        <div class="accordion-content-box">
+                            <span class="badge badge-pred">Predictive Analysis</span>
+                            <p>Kota <b>Lahore</b> diproyeksikan tetap menjadi <i>revenue driver</i> utama dengan frekuensi pesanan rata-rata 26.5 per pelanggan.</p>
+                        </div>
+                    </div>
+
+                    <div class="accordion-item">
+                        <div class="accordion-header" onclick="toggleAccordion(this)">
+                            4. Rekomendasi Mitigasi & Retensi ▼
+                        </div>
+                        <div class="accordion-content-box">
+                            <span class="badge badge-pres">Prescriptive Analysis</span>
+                            <p>Disarankan implementasi <b>Loyalty Tiering</b> khusus untuk metode pembayaran digital guna mengonversi pengguna Cash yang berisiko churn.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="simulator" class="tab-content">
+                    <div class="simulator-card">
+                        <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">
+                            Simulasikan penyesuaian harga menggunakan mata uang lokal (PKR). Laporan akhir laba/rugi akan diekstrapolasi ke dalam nominal Dolar Amerika (USD).
+                        </p>
+                        
+                        <div class="sim-grid">
+                            <div class="sim-input-group">
+                                <label>Menu Makanan (Dari Dataset Aktual)</label>
+                                <select id="simMenu" onchange="autoFillPrice()">
+                                    <option value="" disabled selected>Pilih Menu...</option>
+                                    <option value="pasta_italian">Pasta (Kategori: Italian) - Inelastis</option>
+                                    <option value="burger_fastfood">Burger (Kategori: Fast Food) - Sangat Elastis</option>
+                                    <option value="sandwich_continental">Sandwich (Kategori: Continental) - Stabil</option>
+                                </select>
+                            </div>
+                            
+                            <div class="sim-input-group">
+                                <label>Harga Rata-Rata Saat Ini (PKR)</label>
+                                <input type="number" id="simOldPrice" readonly style="background:#f0f2f5;">
+                            </div>
+                            
+                            <div class="sim-input-group" style="grid-column: span 2;">
+                                <label>Target Harga Baru (PKR)</label>
+                                <input type="number" id="simNewPrice" placeholder="Contoh: 350">
+                            </div>
+                        </div>
+
+                        <button class="sim-btn" onclick="calculatePrediction()">Jalankan Prediksi AI</button>
+
+                        <div id="simResult" class="result-box">
+                            <div id="resTitle" class="result-title"></div>
+                            <div id="resHighlight" class="result-highlight"></div>
+                            <div id="resDetails" class="result-details"></div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="center-footer">
+                <div class="footer-branding">
+                    <img src="https://1000logos.net/wp-content/uploads/2021/02/FoodPanda-logo.jpg" alt="Foodpanda Logo">
+                    <p>Delivering Insights, Empowering Decisions.</p>
+                </div>
+            </div>
+        </main>
+
+        <aside class="ai-section">
+            <div class="chat-header">
+                <span>🤖 PANDA AI ANALYST</span>
+                <div style="width:10px; height:10px; background:#10b981; border-radius:50%;"></div>
+            </div>
+            
+            <div class="chat-history" id="chatHistory">
+                <div class="message msg-ai">Tab Simulator siap digunakan. Pilih menu aktual dari dataset, input harga (PKR), dan saya akan memproyeksikan profitnya ke dalam USD.</div>
+            </div>
+
+            <div class="quick-prompts">
+                <button class="prompt-btn" onclick="sendQuickPrompt('Siapa penyumbang tertinggi?')">🏆 Kategori Utama</button>
+                <button class="prompt-btn" onclick="sendQuickPrompt('Kenapa senior banyak churn?')">⚠️ Isu Senior</button>
+                <button class="prompt-btn" onclick="sendQuickPrompt('Kota terbaik mana?')">📍 Kota Potensial</button>
+                <button class="prompt-btn" onclick="sendQuickPrompt('Apa strategi retensi?')">💡 Rekomendasi</button>
+                <button class="prompt-btn" onclick="sendQuickPrompt('Jelaskan cara kerja simulator harga!')" style="background:#fff5f8;">📊 Cara Kerja Simulator</button>
+                <button class="prompt-btn" onclick="sendQuickPrompt('Apa itu Elastisitas Harga?')" style="background:#fff5f8;">📈 Elastisitas Harga</button>
+            </div>
+
+            <div class="input-area">
+                <input type="text" id="chatInput" placeholder="Ketik pertanyaan...">
+                <button class="send-btn" id="sendBtn">➤</button>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        // LOGIKA TAB NAVIGASI
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // LOGIKA ACCORDION
+        function toggleAccordion(element) {
+            const allHeaders = document.querySelectorAll('.accordion-header');
+            const allContents = document.querySelectorAll('.accordion-content-box');
+            let isCurrentlyActive = element.classList.contains('active');
+
+            allHeaders.forEach(h => h.classList.remove('active'));
+            allContents.forEach(c => c.classList.remove('show'));
+
+            if (!isCurrentlyActive) {
+                element.classList.add('active');
+                element.nextElementSibling.classList.add('show');
+            }
+        }
+
+        // LOGIKA SIMULATOR HARGA & ELASTISITAS (BERDASARKAN DATASET LOGIS)
+        const menuData = {
+            pasta_italian: { price: 277, volume: 738, elasticity: -0.6, name: "Pasta (Italian)" }, 
+            burger_fastfood: { price: 302, volume: 649, elasticity: -1.8, name: "Burger (Fast Food)" }, 
+            sandwich_continental: { price: 327, volume: 737, elasticity: -1.0, name: "Sandwich (Continental)" } 
+        };
+
+        function autoFillPrice() {
+            const menu = document.getElementById('simMenu').value;
+            if(menu && menuData[menu]) {
+                document.getElementById('simOldPrice').value = menuData[menu].price;
+            }
+        }
+
+        function calculatePrediction() {
+            const menuKey = document.getElementById('simMenu').value;
+            const newPrice = parseFloat(document.getElementById('simNewPrice').value);
+            const resultBox = document.getElementById('simResult');
+            
+            if (!menuKey || !newPrice) {
+                alert("Mohon pilih menu makanan dan masukkan harga baru!");
+                return;
+            }
+
+            const data = menuData[menuKey];
+            const oldPrice = data.price; 
+            const oldQty = data.volume;
+            
+            const baseCost = oldPrice * 0.70; // Asumsi Modal 70%
+
+            // Dampak elastisitas
+            const percentPriceChange = (newPrice - oldPrice) / oldPrice;
+            const percentQtyChange = percentPriceChange * data.elasticity;
+            
+            let newQty = oldQty * (1 + percentQtyChange);
+            if (newQty < 0) newQty = 0; 
+            
+            // Profit dalam PKR
+            const oldProfit = (oldPrice - baseCost) * oldQty;
+            const newProfit = (newPrice - baseCost) * newQty;
+            const profitDiffNominal = newProfit - oldProfit;
+
+            // Konversi PKR ke USD (Kurs estimasi 280)
+            const exchangeRate = 280; 
+            const profitDiffUSD = profitDiffNominal / exchangeRate;
+
+            resultBox.style.display = "block";
+            resultBox.className = "result-box"; 
+
+            const title = document.getElementById('resTitle');
+            const highlight = document.getElementById('resHighlight');
+            const details = document.getElementById('resDetails');
+
+            if (profitDiffUSD > 0) {
+                resultBox.classList.add('profit');
+                title.innerText = "🎉 Proyeksi Keuntungan Naik";
+                title.style.color = "#10b981";
+                highlight.innerText = "+ $" + profitDiffUSD.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+                highlight.style.color = "#10b981";
+            } else {
+                resultBox.classList.add('loss');
+                title.innerText = "⚠️ Proyeksi Kerugian (Profit Turun)";
+                title.style.color = "#ef4444";
+                highlight.innerText = "- $" + Math.abs(profitDiffUSD).toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+                highlight.style.color = "#ef4444";
+            }
+
+            details.innerHTML = `
+                <b>Metrik Eksekusi untuk ${data.name}:</b><br>
+                • Pergeseran Permintaan: Diperkirakan berubah sebesar <b>${(percentQtyChange*100).toFixed(1)}%</b>.<br>
+                • Proyeksi Volume Baru: <b>${Math.round(newQty)} porsi</b> (dataset awal merekam ${oldQty} porsi).<br><br>
+                <i>*Model simulasi memperhitungkan Harga Pokok Penjualan (COGS) di 70%. Hasil dikonversi dari PKR ke USD menggunakan rate 1:280.</i>
+            `;
+        }
+
+        // LOGIKA AI CHAT
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const chatHistory = document.getElementById('chatHistory');
+
+        function appendMessage(sender, text) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `message ${sender === 'user' ? 'msg-user' : 'msg-ai'}`;
+            msgDiv.innerHTML = text;
+            chatHistory.appendChild(msgDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight; 
+        }
+
+        function sendQuickPrompt(text) {
+            chatInput.value = text;
+            handleSend();
+        }
+
+        function handleSend() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+            appendMessage('user', text); 
+            chatInput.value = ''; 
+
+            const textLower = text.toLowerCase();
+            const typingId = "typing-" + Date.now();
+            const typingMsg = document.createElement('div');
+            typingMsg.className = 'message msg-ai';
+            typingMsg.id = typingId;
+            typingMsg.textContent = "Menganalisis dataset...";
+            chatHistory.appendChild(typingMsg);
+
+            setTimeout(() => {
+                document.getElementById(typingId).remove(); 
+                let reply = "";
+                
+                if (textLower.includes("kontribusi") || textLower.includes("kategori") || textLower.includes("tertinggi") || textLower.includes("utama")) {
+                    reply = "Berdasarkan dataset riil, <b>Continental</b> (terutama menu Sandwich) adalah salah satu kontributor performa kuat. Secara makro, hal ini merepresentasikan kuatnya daya beli pengguna platform terhadap variasi makanan spesifik, sukses menyumbang pada <i>Total Revenue</i>.";
+                } else if (textLower.includes("senior") || textLower.includes("churn") || textLower.includes("inaktif")) {
+                    reply = "Melalui <b>Analisis Diagnostik</b>, demografi <b>Senior</b> teridentifikasi memiliki <i>churn rate</i> tertinggi. Akar masalah dari tren data mengarah pada limitasi adaptasi UI/UX aplikasi dan ketergantungan pada metode tunai (Cash) yang berkorelasi pada pembatalan.";
+                } else if (textLower.includes("kota") || textLower.includes("lahore") || textLower.includes("potensial") || textLower.includes("terbaik")) {
+                    reply = "Metrik menetapkan <b>Lahore</b> sebagai wilayah strategis. Algoritma memproyeksikan kota ini harus menjadi fokus utama alokasi anggaran pemasaran untuk mendapatkan <i>Return on Investment</i> (ROI) yang optimal kuartal ini.";
+                } else if (textLower.includes("retensi") || textLower.includes("strategi") || textLower.includes("rekomendasi")) {
+                    reply = "Sistem merekomendasikan: <br><b>1. Migrasi Wallet:</b> Insentif <i>Loyalty Points</i> ganda untuk transaksi pertama pakai e-Wallet.<br><b>2. Mode Senior-Friendly:</b> UI/UX khusus (font besar, 1-klik checkout) untuk merevitalisasi akun yang <i>inactive</i>.";
+                } else if (textLower.includes("kerja simulator") || textLower.includes("cara kerja")) {
+                    reply = "Simulator mengambil <b>harga rata-rata aktual dan volume dari dataset riil Anda</b>. Saat harga diinput, sistem menghitung penyusutan kuantitas pesanan berdasarkan elastisitas, lalu menimbang selisih laba dengan asumsi batas Biaya Pokok Produksi (COGS) sebesar 70%.";
+                } else if (textLower.includes("elastisitas")) {
+                    reply = "<b>Elastisitas Harga</b> adalah rasio responsivitas pembeli.<br>• <b>Elastisitas Tinggi (-1.8 / Burger Fast Food):</b> Pelanggan sangat sensitif. Naikkan harga sedikit, kuantitas turun drastis.<br>• <b>Inelastisitas (-0.6 / Pasta Italian):</b> Konsumen kurang sensitif dan bersedia mentolerir kenaikan harga, sehingga risiko penyusutan volume lebih rendah.";
+                } else {
+                    reply = "Pertanyaan valid. Namun, silakan fokus menggunakan simulasi harga pada menu <b>Pasta (Italian), Burger (Fast Food), atau Sandwich (Continental)</b> berdasarkan data aktual yang ada di tab <b>AI Price Simulator</b>.";
+                }
+                appendMessage('ai', reply);
+            }, 1000); 
+        }
+
+        sendBtn.addEventListener('click', handleSend);
+        chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
+    </script>
+</body>
+</html>
